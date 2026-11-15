@@ -1,0 +1,109 @@
+# Сборка и тесты на облачном Mac от GitHub — свой Mac не нужен.
+# Запускается при каждом push и вручную (вкладка Actions → iOS → Run workflow).
+name: iOS
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ios-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # 1. Проверка, что всё компилируется, + юнит-тесты на симуляторе iPhone.
+  test:
+    name: Сборка и тесты (симулятор)
+    runs-on: macos-26
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Выбрать последний стабильный Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Сгенерировать Xcode-проект
+        run: |
+          brew install xcodegen
+          xcodegen generate
+
+      - name: Найти симулятор iPhone
+        id: sim
+        run: |
+          UDID=$(xcrun simctl list devices available -j | python3 -c "
+          import json, sys
+          devices = json.load(sys.stdin)['devices']
+          for runtime in sorted(devices, reverse=True):
+              if 'iOS' in runtime:
+                  for d in devices[runtime]:
+                      if d['name'].startswith('iPhone'):
+                          print(d['udid']); sys.exit()
+          ")
+          echo "Симулятор: $UDID"
+          echo "udid=$UDID" >> "$GITHUB_OUTPUT"
+
+      - name: Сборка и тесты
+        run: |
+          set -o pipefail
+          xcodebuild test \
+            -project CircleSearch.xcodeproj \
+            -scheme CircleSearch \
+            -destination "id=${{ steps.sim.outputs.udid }}" \
+            -resultBundlePath TestResults.xcresult \
+            CODE_SIGNING_ALLOWED=NO \
+            | tee xcodebuild.log
+
+      - name: Сохранить логи и результаты тестов
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: |
+            TestResults.xcresult
+            xcodebuild.log
+
+  # 2. Неподписанный .ipa для установки на iPhone через Sideloadly / AltStore (с Windows).
+  ipa:
+    name: Неподписанный IPA
+    needs: test
+    runs-on: macos-26
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Сгенерировать Xcode-проект
+        run: |
+          brew install xcodegen
+          xcodegen generate
+
+      - name: Сборка для iPhone без подписи
+        run: |
+          set -o pipefail
+          xcodebuild build \
+            -project CircleSearch.xcodeproj \
+            -scheme CircleSearch \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            | tee build.log
+
+      - name: Упаковать в IPA
+        run: |
+          mkdir -p Payload
+          cp -R build/Build/Products/Release-iphoneos/CircleSearch.app Payload/
+          zip -qry CircleSearch-unsigned.ipa Payload
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: CircleSearch-unsigned-ipa
+          path: CircleSearch-unsigned.ipa

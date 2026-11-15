@@ -1,0 +1,11 @@
+.DS_Store
+*.xcodeproj
+*.xcworkspace
+xcuserdata/
+DerivedData/
+build/
+.swiftpm/
+App/Info.plist
+App/*.entitlements
+Extensions/ShareExtension/Info.plist
+Extensions/ShareExtension/*.entitlements

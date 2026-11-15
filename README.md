@@ -1,0 +1,68 @@
+# Обвести и найти (CircleSearch) для iPhone
+
+Аналог Circle to Search с Google Pixel для iPhone: обводите, закрашиваете или касаетесь объекта на экране —
+и получаете выдачу Google, распознанный текст, перевод и QR-ссылки.
+
+## Режимы работы и что происходит с текущим приложением
+
+iOS не позволяет сторонним приложениям рисовать поверх других приложений. Поэтому есть два режима:
+
+| Режим | Как запустить | Текущее приложение |
+|---|---|---|
+| **Visual Intelligence** (iOS 26+, рекомендуемый) | скриншот → обвести объект → вкладка «Обвести и найти» | остаётся на экране, **не уходит в фон**: интерфейс системный, наше приложение отвечает в фоне |
+| **Полный оверлей** | Action Button / Back Tap → команда «Сделать снимок экрана» → «Обвести и найти» | уходит в фон — открывается наше приложение |
+| **Share Extension** | скриншот → миниатюра → «Поделиться» → «Обвести и найти» | остаётся под системным редактором скриншота |
+
+Важно: пока поверх приложения показан любой системный интерфейс (редактор скриншота, Visual Intelligence,
+Пункт управления), iOS переводит приложение под ним в состояние *inactive* — так же, как при открытии
+Пункта управления. В фон (*background*) оно не уходит. Это поведение iOS, сторонний разработчик им не управляет.
+
+## Google поиск
+
+| Что | Как | Нужен ключ |
+|---|---|---|
+| Обратный поиск по изображению (страницы, похожие картинки, «лучшая догадка») | Google Cloud Vision API, Web Detection — `GoogleVisionClient` | да |
+| Веб-выдача Google Lens | загрузка изображения в Lens — `GoogleLensProvider` | нет |
+| Текстовый поиск | `GoogleWebSearch` | нет |
+
+### Как получить ключ
+1. [console.cloud.google.com](https://console.cloud.google.com) → создать проект → включить **Cloud Vision API**
+   (нужен привязанный платёжный аккаунт; первые 1000 запросов в месяц бесплатны).
+2. «APIs & Services → Credentials → Create credentials → API key».
+3. Ограничьте ключ: *Application restrictions → iOS apps* → bundle ID приложения и расширения;
+   *API restrictions* → только Cloud Vision API.
+4. В приложении: ⚙︎ Настройки → «API-ключ Google Cloud». Ключ хранится в Keychain.
+
+Для продакшена ключ лучше держать на своём сервере-прокси, а не в приложении.
+
+## Сборка
+
+Приложение — для **iPhone**. Mac нужен только как инструмент сборки: Apple выпускает Xcode
+(компилятор и подпись iOS-приложений) только для macOS.
+
+**Нет Mac?** Проект собирается и тестируется в облаке через GitHub Actions
+(`.github/workflows/ios.yml`), а на iPhone ставится с Windows через Sideloadly.
+Пошагово — [docs/BUILD_WITHOUT_MAC.md](docs/BUILD_WITHOUT_MAC.md).
+
+Сборка на Mac:
+
+Требования: Xcode 26+ (SDK iOS 26 для Visual Intelligence), минимальная iOS — 17.4.
+
+```bash
+brew install xcodegen
+```
+
+```bash
+xcodegen generate && open CircleSearch.xcodeproj
+```
+
+Перед запуском на iPhone:
+1. Укажите `DEVELOPMENT_TEAM` в `project.yml`.
+2. Замените `com.example.circlesearch` и `group.com.example.circlesearch` на свои идентификаторы
+   (в `project.yml` и `Kit/Shared/AppGroup.swift`).
+3. Добавьте иконку 1024×1024 в `Resources/Assets.xcassets/AppIcon.appiconset`.
+
+Visual Intelligence работает на iPhone с Apple Intelligence (15 Pro и новее) на iOS 26+.
+Распознавание объектов по тапу работает только на реальном устройстве.
+
+Архитектура и правила для изменений — в [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
