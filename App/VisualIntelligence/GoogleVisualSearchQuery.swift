@@ -2,6 +2,10 @@ import AppIntents
 import CircleSearchKit
 import CoreImage
 import UIKit
+
+// Модуль VisualIntelligence есть только в SDK для реального iPhone —
+// в сборке для симулятора этот файл просто исключается.
+#if canImport(VisualIntelligence)
 import VisualIntelligence
 
 /// Интеграция с системным Visual Intelligence (iOS 26+).
@@ -42,3 +46,4 @@ struct GoogleVisualSearchQuery: IntentValueQuery {
         }
     }
 }
+#endif

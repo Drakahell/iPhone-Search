@@ -1,4 +1,3 @@
-import AppIntents
 import PhotosUI
 import SwiftUI
 
@@ -9,6 +8,7 @@ public struct HomeScreen: View {
     @State private var pickerItem: PhotosPickerItem?
     @State private var errorMessage: String?
     @State private var isLoadingLatest = false
+    @Environment(\.openURL) private var openURL
 
     public init(onImage: @escaping (UIImage, CaptureSource) -> Void) {
         self.onImage = onImage
@@ -33,9 +33,11 @@ public struct HomeScreen: View {
                 Section {
                     SetupStep(number: 1, text: "Откройте «Команды» и создайте команду: «Сделать снимок экрана» → «Обвести и найти».")
                     SetupStep(number: 2, text: "Назначьте её на Action Button или Back Tap (Универсальный доступ → Касание → Касание задней панели).")
-                    ShortcutsLink()
-                        .shortcutsLinkStyle(.automaticOutline)
-                        .frame(maxWidth: .infinity)
+                    Button {
+                        openURL(URL(string: "shortcuts://")!)
+                    } label: {
+                        Label("Открыть «Команды»", systemImage: "square.2.layers.3d")
+                    }
                 } header: {
                     Text("Полный оверлей")
                 } footer: {
