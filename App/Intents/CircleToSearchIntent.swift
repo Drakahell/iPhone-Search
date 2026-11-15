@@ -1,7 +1,6 @@
 import AppIntents
 import CircleSearchKit
 import UIKit
-import UniformTypeIdentifiers
 
 /// Главный «триггер» оверлея на iOS.
 /// Команда: «Сделать снимок экрана» → «Обвести и найти» → назначить на Action Button / Back Tap.
@@ -14,7 +13,7 @@ struct CircleToSearchIntent: AppIntent {
 
     @Parameter(
         title: "Изображение",
-        supportedContentTypes: [.image],
+        supportedTypeIdentifiers: ["public.image"],
         inputConnectionBehavior: .connectToPreviousIntentResult
     )
     var image: IntentFile
