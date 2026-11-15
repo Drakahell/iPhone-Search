@@ -56,6 +56,10 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             | tee xcodebuild.log
 
+      - name: Показать ошибки компиляции
+        if: failure()
+        run: python3 .github/scripts/annotate_errors.py xcodebuild.log
+
       - name: Сохранить логи и результаты тестов
         if: always()
         uses: actions/upload-artifact@v4
@@ -68,7 +72,6 @@ jobs:
   # 2. Неподписанный .ipa для установки на iPhone через Sideloadly / AltStore (с Windows).
   ipa:
     name: Неподписанный IPA
-    needs: test
     runs-on: macos-26
     timeout-minutes: 30
     steps:
@@ -96,6 +99,10 @@ jobs:
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY="" \
             | tee build.log
+
+      - name: Показать ошибки компиляции
+        if: failure()
+        run: python3 .github/scripts/annotate_errors.py build.log
 
       - name: Упаковать в IPA
         run: |
