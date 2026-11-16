@@ -2,7 +2,7 @@
 window.CIRCLE_CONFIG = {
   // iCloud-ссылка на готовую команду для касания задней панели (необязательно).
   // В «Командах»: удерживайте команду → «Поделиться» → «Скопировать ссылку iCloud» → вставьте сюда.
-  shortcutURL: "",
+  shortcutURL: "https://www.icloud.com/shortcuts/ff0969fd70f044edb6678b18b73c4b81",
 
   // Язык выдачи Google.
   language: "ru",

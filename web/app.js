@@ -90,7 +90,8 @@
     const w = image.naturalWidth * s, h = image.naturalHeight * s;
     fit = { x: (W - w) / 2, y: (H - h) / 2, w, h };
     Object.assign(shot.style, { left: fit.x + "px", top: fit.y + "px", width: w + "px", height: h + "px" });
-    const dpr = window.devicePixelRatio || 1;
+    // Холст штриха не нужен в полном retina-разрешении: ×2 выглядит так же, а памяти втрое меньше.
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
     ink.width = W * dpr; ink.height = H * dpr;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     if (selection) placeSelection(selection, true);
@@ -299,30 +300,45 @@
 
   // Готовая команда для касания задней панели
   if (cfg.shortcutURL) {
-    $("shortcut-ready").hidden = false;
+    $("shortcut-link").hidden = false;
     $("shortcut-link").href = cfg.shortcutURL;
   }
 
   // Открыто из команды «Показать веб-страницу» со скриншотом в ссылке: «…/#img=<base64>».
   // Часть после # не уходит на сервер — изображение остаётся на телефоне.
   function openFromHash() {
-    const hash = location.hash;
-    if (!hash.startsWith("#img=")) return false;
-    let b64 = hash.slice(5);
-    if (b64.includes("%")) { try { b64 = decodeURIComponent(b64); } catch { /* оставить как есть */ } }
-    b64 = b64.replace(/\s+/g, "").replace(/-/g, "+").replace(/_/g, "/");
-    const img = new Image();
-    img.onload = () => {
-      showOverlay(img);
-      // Убираем огромную ссылку из истории, чтобы «Назад» после Google вёл к оверлею.
-      history.replaceState(null, "", location.pathname + location.search);
-    };
-    img.onerror = () => toast("Не удалось прочитать скриншот из команды.");
-    // Формат по первым байтам: PNG начинается с «iVBOR», JPEG — с «/9j/». Конвертация в команде не обязательна.
-    const mime = b64.startsWith("iVBOR") ? "image/png" : b64.startsWith("R0lG") ? "image/gif"
-      : b64.startsWith("UklG") ? "image/webp" : b64.startsWith("AAAA") ? "image/heic" : "image/jpeg";
-    img.src = "data:" + mime + ";base64," + b64;
+    if (!location.hash.startsWith("#img=")) return false;
+    let b64 = location.hash.slice(5);
+    // Сразу убираем огромную ссылку из адреса: если iOS перезагрузит страницу,
+    // она не будет снова разбирать мегабайты текста (раньше это вызывало повторные сбои).
+    history.replaceState(null, "", location.pathname + location.search);
+
+    try {
+      if (b64.includes("%")) b64 = decodeURIComponent(b64);
+      b64 = b64.replace(/[^A-Za-z0-9+/=_-]/g, "").replace(/-/g, "+").replace(/_/g, "/");
+      // Формат по первым байтам: PNG — «iVBOR», JPEG — «/9j/». Конвертация в команде не обязательна.
+      const mime = b64.startsWith("iVBOR") ? "image/png" : b64.startsWith("R0lG") ? "image/gif"
+        : b64.startsWith("UklG") ? "image/webp" : "image/jpeg";
+      const blob = base64ToBlob(b64, mime);
+      b64 = null;                       // отпускаем строку — она в разы больше картинки
+      openBlob(blob);
+    } catch {
+      toast("Не удалось прочитать скриншот из команды.");
+    }
     return true;
+  }
+
+  /** Base64 → Blob кусками, без промежуточной data:-строки. */
+  function base64ToBlob(b64, mime) {
+    const CHUNK = 1 << 18;              // 256 КБ текста за раз (кратно 4)
+    const parts = [];
+    for (let i = 0; i < b64.length; i += CHUNK) {
+      const bin = atob(b64.slice(i, i + CHUNK));
+      const bytes = new Uint8Array(bin.length);
+      for (let j = 0; j < bin.length; j++) bytes[j] = bin.charCodeAt(j);
+      parts.push(bytes);
+    }
+    return new Blob(parts, { type: mime });
   }
 
   // Открыто из команды: «…/?paste» — один тап, чтобы вставить скриншот из буфера.
