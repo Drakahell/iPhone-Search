@@ -1,0 +1,16 @@
+{
+  "name": "Обвести и найти",
+  "short_name": "Обвести",
+  "description": "Обведите что угодно на скриншоте и найдите это в Google.",
+  "lang": "ru",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0e1018",
+  "theme_color": "#0e1018",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

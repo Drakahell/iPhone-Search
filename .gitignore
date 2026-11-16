@@ -9,3 +9,4 @@ App/Info.plist
 App/*.entitlements
 Extensions/ShareExtension/Info.plist
 Extensions/ShareExtension/*.entitlements
+.claude/

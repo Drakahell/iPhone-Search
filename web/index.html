@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Обвести и найти</title>
+<meta name="description" content="Обведите что угодно на скриншоте и найдите это в Google.">
+<meta name="theme-color" content="#0e1018">
+<!-- Без заголовка источника: иначе Google Lens отклоняет загрузку с чужого сайта (403). -->
+<meta name="referrer" content="no-referrer">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Обвести">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+
+<!-- ── Стартовый экран ───────────────────────────────────────────── -->
+<main id="home">
+  <div class="logo" aria-hidden="true"><span></span></div>
+  <h1>Обвести и найти</h1>
+  <p class="lead">Обведите что угодно на скриншоте — и найдите это в Google.</p>
+
+  <label class="btn primary" for="file">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7a3 3 0 0 1 3-3h10a3 3 0 0 1 3 3v10a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3z"/><circle cx="9" cy="9.5" r="1.6"/><path d="m5 18 4.5-5 3 3 2.5-2.5L19 18"/></svg>
+    Выбрать скриншот
+  </label>
+  <input id="file" type="file" accept="image/*" hidden>
+
+  <button id="paste" class="btn" type="button">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="4" width="12" height="17" rx="2.5"/><path d="M9 4.5V3.8A1.8 1.8 0 0 1 10.8 2h2.4A1.8 1.8 0 0 1 15 3.8v.7"/></svg>
+    Вставить из буфера
+  </button>
+
+  <section class="howto">
+    <h2>Как пользоваться</h2>
+    <ol>
+      <li><b>Сделайте скриншот</b><span>Боковая кнопка + громкость вверх.</span></li>
+      <li><b>Откройте эту страницу</b><span>«Выбрать скриншот» → он будет первым в списке.</span></li>
+      <li><b>Обведите пальцем</b><span>То, что хотите найти, — и нажмите «Искать».</span></li>
+    </ol>
+  </section>
+
+  <details class="tips">
+    <summary>Добавить на экран «Домой»</summary>
+    <p>В Safari нажмите <b>«Поделиться»</b> → <b>«На экран „Домой“»</b>. Появится значок, как у приложения.
+       Чтобы убрать — удерживайте значок → «Удалить закладку». Больше ничего не остаётся.</p>
+  </details>
+
+  <details class="tips" id="shortcut-tip">
+    <summary>Запуск двойным касанием по задней крышке</summary>
+    <p id="shortcut-ready" hidden><a class="btn small" id="shortcut-link" href="#">Добавить готовую команду</a></p>
+    <p>Команда: «Сделать снимок экрана» → «Скопировать в буфер» → «Открыть URL» (адрес этой страницы с <code>?paste</code>).
+       Затем: Настройки → Универсальный доступ → Касание → Касание задней панели → Двойное касание → эта команда.</p>
+  </details>
+
+  <p class="privacy">Изображение отправляется только в Google и только когда вы нажмёте «Искать».</p>
+</main>
+
+<!-- ── Оверлей ────────────────────────────────────────────────────── -->
+<div id="overlay" hidden>
+  <div id="stage">
+    <img id="shot" alt="">
+    <div id="dim"></div>
+    <div id="sel" hidden>
+      <i class="c tl"></i><i class="c tr"></i><i class="c bl"></i><i class="c br"></i>
+      <div class="shimmer"></div>
+      <span class="h tl" data-corner="tl"></span><span class="h tr" data-corner="tr"></span>
+      <span class="h bl" data-corner="bl"></span><span class="h br" data-corner="br"></span>
+    </div>
+    <canvas id="ink"></canvas>
+  </div>
+
+  <div id="glow" aria-hidden="true"><div class="soft"></div><div class="edge"></div></div>
+
+  <div class="topbar">
+    <button id="close" class="round" type="button" aria-label="Закрыть">
+      <svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg>
+    </button>
+    <div id="hint" class="hint">Обведите или коснитесь</div>
+    <span class="round ghost"></span>
+  </div>
+
+  <div class="bottombar">
+    <button id="search" class="btn primary search" type="button" disabled>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m20 20-4.8-4.8"/></svg>
+      Искать в Google
+    </button>
+  </div>
+</div>
+
+<!-- Пасте-ловушка: показывается, когда открыто из команды (?paste) -->
+<div id="pastegate" hidden>
+  <button id="pastebig" type="button">
+    <span class="logo small" aria-hidden="true"><span></span></span>
+    Нажмите, чтобы вставить скриншот
+  </button>
+</div>
+
+<!-- Форма загрузки в Google Lens: изображение подставляется из JS -->
+<form id="lens" method="POST" enctype="multipart/form-data" hidden>
+  <input id="lensfile" type="file" name="encoded_image">
+</form>
+
+<div id="toast" role="status" hidden></div>
+
+<script src="config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
