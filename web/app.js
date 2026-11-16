@@ -71,6 +71,7 @@
   }
 
   function closeOverlay() {
+    try { sessionStorage.removeItem("fromShortcut"); } catch { /* приватный режим */ }
     overlay.hidden = true;
     home.hidden = false;
     clearSelection(false);
@@ -300,7 +301,7 @@
 
   // Готовая команда для касания задней панели
   if (cfg.shortcutURL) {
-    $("shortcut-link").hidden = false;
+    $("shortcut-ready").hidden = false;
     $("shortcut-link").href = cfg.shortcutURL;
   }
 
@@ -312,6 +313,7 @@
     // Сразу убираем огромную ссылку из адреса: если iOS перезагрузит страницу,
     // она не будет снова разбирать мегабайты текста (раньше это вызывало повторные сбои).
     history.replaceState(null, "", location.pathname + location.search);
+    try { sessionStorage.setItem("fromShortcut", "1"); } catch { /* приватный режим */ }
 
     try {
       if (b64.includes("%")) b64 = decodeURIComponent(b64);
@@ -342,8 +344,19 @@
   }
 
   // Открыто из команды: «…/?paste» — один тап, чтобы вставить скриншот из буфера.
-  if (!openFromHash() && new URLSearchParams(location.search).has("paste")) $("pastegate").hidden = false;
+  const openedFromShortcut = openFromHash();
+  if (!openedFromShortcut && new URLSearchParams(location.search).has("paste")) $("pastegate").hidden = false;
 
-  // Офлайн-кэш для значка на экране «Домой»
-  if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
+  // Страница была открыта командой, но iOS её перезагрузила (не хватило памяти) — скажем об этом.
+  try {
+    if (!openedFromShortcut && sessionStorage.getItem("fromShortcut")) {
+      sessionStorage.removeItem("fromShortcut");
+      toast("Скриншот не загрузился — закройте окно и запустите команду ещё раз.");
+    }
+  } catch { /* приватный режим */ }
+
+  // Офлайн-кэш отключён: удаляем ранее установленный, чтобы всегда грузилась свежая версия.
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.getRegistrations().then((rs) => rs.forEach((r) => r.unregister())).catch(() => {});
+  }
 })();

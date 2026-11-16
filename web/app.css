@@ -103,15 +103,13 @@ h1 { font-size: 30px; line-height: 1.15; margin: 8px 0 0; text-align: center; le
   background: conic-gradient(from var(--a), var(--glow)); animation: spin 4s linear infinite;
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   -webkit-mask-composite: xor; mask-composite: exclude; }
-#glow .edge { padding: 3px; }
-#glow .soft { padding: 18px; filter: blur(12px) saturate(1.3); transition: padding .9s; }
+/* Только тонкая цветная кромка: без размытия — дёшево по памяти и не закрывает экран. */
+#glow .edge { padding: 2px; }
+#glow .soft { display: none; }
 #overlay.flash #glow { opacity: 1; }
-#overlay.flash #glow .soft { padding: 30px; }
-#overlay.calm #glow { opacity: .55; }
+#overlay.calm #glow { opacity: .85; }
 #overlay.calm #glow > div { animation-play-state: paused; }
-/* Размытый ореол — самая дорогая часть; в покое оставляем только тонкую кромку. */
-#overlay.calm #glow .soft { display: none; }
-#overlay.busy #glow { opacity: .85; }
+#overlay.busy #glow { opacity: 1; }
 #overlay.busy #glow > div { animation-play-state: running; }
 
 /* Хром */
