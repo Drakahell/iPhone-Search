@@ -1,6 +1,6 @@
 // Кэш оболочки приложения: значок на экране «Домой» открывается мгновенно и без сети.
 // При изменении файлов увеличьте номер версии.
-const CACHE = "circle-v4";
+const CACHE = "circle-v5";
 const SHELL = ["./", "index.html", "app.css", "app.js", "config.js", "manifest.webmanifest", "icons/icon-180.png", "icons/icon-192.png"];
 
 self.addEventListener("install", (e) => {
