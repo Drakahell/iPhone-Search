@@ -37,6 +37,13 @@ struct SearchWebView: UIViewRepresentable {
             isLoading.wrappedValue = true
         }
 
+        /// Если iOS выгрузила процесс страницы из-за нехватки памяти — перезагружаем,
+        /// а не оставляем пустой белый экран.
+        func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
+            if webView.url != nil { webView.reload() }
+            else if let loadedRequest { webView.load(loadedRequest) }
+        }
+
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
             isLoading.wrappedValue = false
         }

@@ -11,6 +11,7 @@ final class OverlayViewModel: ObservableObject {
     }
 
     let capture: Capture
+    let mode: OverlayMode
 
     // MARK: Состояние для UI
     @Published private(set) var phase: Phase = .idle
@@ -20,8 +21,6 @@ final class OverlayViewModel: ObservableObject {
     @Published private(set) var selection: CGRect?
     @Published private(set) var isFrameVisible = false
     @Published private(set) var highlightedText: [RecognizedText] = []
-    @Published private(set) var croppedImage: UIImage?
-    @Published private(set) var recognition: RecognitionResult = .empty
     @Published private(set) var searchRequest: URLRequest?
     @Published var isResultsPresented = false
     @Published var isLoadingResults = false
@@ -49,16 +48,17 @@ final class OverlayViewModel: ObservableObject {
     private let searchCoordinator: SearchCoordinator
 
     private var screenText: [RecognizedText] = []
-    private var searchTask: Task<Void, Never>?
     private var webSearchTask: Task<Void, Never>?
 
     init(
         capture: Capture,
+        mode: OverlayMode = .app,
         analyzer: ImageAnalyzing = VisionAnalyzer(),
         subjectLocator: SubjectLocator = SubjectLocator(),
         search: SearchCoordinator = SearchCoordinator()
     ) {
         self.capture = capture
+        self.mode = mode
         self.analyzer = analyzer
         self.subjectLocator = subjectLocator
         self.searchCoordinator = search
@@ -68,7 +68,8 @@ final class OverlayViewModel: ObservableObject {
 
     func onAppear() {
         Haptics.shared.overlayOpened()
-        guard AppSettings.scanTextOnOpen else { return }
+        // В расширении не распознаём весь экран заранее: это самая «тяжёлая» по памяти операция.
+        guard AppSettings.scanTextOnOpen, mode == .app else { return }
         // Заранее распознаём текст на всём экране — для тапа по строке и подсветки.
         Task { [weak self, analyzer, image = capture.image] in
             let result = try? await analyzer.analyze(image, features: .text)
@@ -114,13 +115,20 @@ final class OverlayViewModel: ObservableObject {
             return
         }
 
+        // 3. Фолбэк — область вокруг точки
+        let fallback = CGRect(x: n.x - 0.15, y: n.y - 0.08, width: 0.3, height: 0.16)
+
+        // В расширении нейросеть поиска объекта не запускаем — не хватит памяти.
+        guard mode == .app else {
+            commit(normalized: fallback)
+            return
+        }
+
         // 2. Тап по объекту
         phase = .locating
         Task { [weak self, subjectLocator, image = capture.image] in
             let rect = await subjectLocator.subjectRect(in: image, at: n)
             guard let self else { return }
-            // 3. Фолбэк — область вокруг точки
-            let fallback = CGRect(x: n.x - 0.15, y: n.y - 0.08, width: 0.3, height: 0.16)
             self.commit(normalized: (rect ?? fallback).insetBy(dx: -0.01, dy: -0.01))
         }
     }
@@ -163,7 +171,6 @@ final class OverlayViewModel: ObservableObject {
     }
 
     func clearSelection() {
-        searchTask?.cancel()
         webSearchTask?.cancel()
         isLoadingWebResults = false
         withAnimation(AnimationTokens.selectionMorph) { reset() }
@@ -182,7 +189,6 @@ final class OverlayViewModel: ObservableObject {
 
     /// Поиск по выделению (и уточняющему тексту, если есть) либо чисто текстовый.
     func runSearch(refinement: String? = nil) {
-        searchTask?.cancel()
         let refinement = refinement?.trimmingCharacters(in: .whitespacesAndNewlines)
 
         guard let selection else {
@@ -218,7 +224,6 @@ final class OverlayViewModel: ObservableObject {
     }
 
     private func search(_ query: SearchQuery, crop: UIImage?) {
-        croppedImage = crop
         do {
             searchRequest = try searchCoordinator.request(for: query)
             errorMessage = nil
@@ -230,14 +235,6 @@ final class OverlayViewModel: ObservableObject {
         startGoogleImageSearch(crop)
         resultsTab = (crop != nil && isGoogleConfigured) ? .google : .web
         isResultsPresented = true
-
-        // Параллельно — локальное распознавание фрагмента для быстрых действий.
-        guard let crop else { return }
-        searchTask = Task { [weak self, analyzer] in
-            let result = (try? await analyzer.analyze(crop, features: .all)) ?? .empty
-            guard !Task.isCancelled else { return }
-            self?.recognition = result
-        }
     }
 
     /// Обратный поиск через Google Cloud Vision — если ключ задан в настройках.

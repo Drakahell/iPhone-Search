@@ -4,10 +4,13 @@ import SwiftUI
 /// `intensity` 0…1: 1 — вспышка при открытии, ~0.35 — спокойное состояние, ~0.8 — идёт поиск.
 struct EdgeGlow: View {
     var intensity: Double
+    /// Анимация вращения градиента. Размытие по всему краю дорогое,
+    /// поэтому в покое кадры не перерисовываются.
+    var isAnimating = true
     var cornerRadius: CGFloat = Theme.Radius.display
 
     var body: some View {
-        TimelineView(.animation(paused: intensity == 0)) { context in
+        TimelineView(.animation(paused: intensity == 0 || !isAnimating)) { context in
             let t = context.date.timeIntervalSinceReferenceDate
             let period = AnimationTokens.glowRotationPeriod
             let angle = Angle.degrees(t.truncatingRemainder(dividingBy: period) / period * 360)

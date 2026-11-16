@@ -7,8 +7,8 @@ public struct OverlayScreen: View {
     @State private var chromeVisible = false
     private let onClose: () -> Void
 
-    public init(capture: Capture, onClose: @escaping () -> Void) {
-        _model = StateObject(wrappedValue: OverlayViewModel(capture: capture))
+    public init(capture: Capture, mode: OverlayMode = .app, onClose: @escaping () -> Void) {
+        _model = StateObject(wrappedValue: OverlayViewModel(capture: capture, mode: mode))
         self.onClose = onClose
     }
 
@@ -76,7 +76,11 @@ public struct OverlayScreen: View {
                     .opacity(model.strokeOpacity)
 
                 if AppSettings.edgeGlowEnabled {
-                    EdgeGlow(intensity: model.isBusy ? max(glowIntensity, 0.8) : glowIntensity)
+                    // Переливается только при открытии и во время поиска, в покое — статично.
+                    EdgeGlow(
+                        intensity: model.isBusy ? max(glowIntensity, 0.8) : glowIntensity,
+                        isAnimating: model.isBusy || glowIntensity > 0.5
+                    )
                         .animation(AnimationTokens.glowSettle, value: model.isBusy)
                 }
             }

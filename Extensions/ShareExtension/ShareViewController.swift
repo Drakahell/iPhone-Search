@@ -34,7 +34,7 @@ final class ShareViewController: UIViewController {
 
     private func showOverlay(_ image: UIImage) {
         spinner.stopAnimating()
-        let overlay = OverlayScreen(capture: Capture(image: image, source: .shareSheet)) { [weak self] in
+        let overlay = OverlayScreen(capture: Capture(image: image, source: .shareSheet), mode: .shareExtension) { [weak self] in
             self?.finish()
         }
         let host = UIHostingController(rootView: overlay)
