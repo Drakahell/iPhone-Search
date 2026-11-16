@@ -58,7 +58,7 @@
 
   // ── Показ / закрытие оверлея ──────────────────────────────────────
   function showOverlay(img) {
-    if (image) URL.revokeObjectURL(image.src);
+    if (image && image.src.startsWith("blob:")) URL.revokeObjectURL(image.src);
     image = img;
     shot.src = img.src;
     home.hidden = true;
@@ -303,8 +303,27 @@
     $("shortcut-link").href = cfg.shortcutURL;
   }
 
-  // Открыто из команды: «…/?paste» — один тап, чтобы вставить скриншот.
-  if (new URLSearchParams(location.search).has("paste")) $("pastegate").hidden = false;
+  // Открыто из команды «Показать веб-страницу» со скриншотом в ссылке: «…/#img=<base64>».
+  // Часть после # не уходит на сервер — изображение остаётся на телефоне.
+  function openFromHash() {
+    const hash = location.hash;
+    if (!hash.startsWith("#img=")) return false;
+    let b64 = hash.slice(5);
+    if (b64.includes("%")) { try { b64 = decodeURIComponent(b64); } catch { /* оставить как есть */ } }
+    b64 = b64.replace(/\s+/g, "").replace(/-/g, "+").replace(/_/g, "/");
+    const img = new Image();
+    img.onload = () => {
+      showOverlay(img);
+      // Убираем огромную ссылку из истории, чтобы «Назад» после Google вёл к оверлею.
+      history.replaceState(null, "", location.pathname + location.search);
+    };
+    img.onerror = () => toast("Не удалось прочитать скриншот из команды.");
+    img.src = "data:image/jpeg;base64," + b64;
+    return true;
+  }
+
+  // Открыто из команды: «…/?paste» — один тап, чтобы вставить скриншот из буфера.
+  if (!openFromHash() && new URLSearchParams(location.search).has("paste")) $("pastegate").hidden = false;
 
   // Офлайн-кэш для значка на экране «Домой»
   if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
