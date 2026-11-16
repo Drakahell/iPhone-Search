@@ -26,6 +26,8 @@ struct HintCapsule: View {
         Text(text)
             .font(.subheadline.weight(.medium))
             .foregroundStyle(.white)
+            .lineLimit(1)
+            .minimumScaleFactor(0.7)
             .padding(.horizontal, 16)
             .padding(.vertical, 10)
             .background(.ultraThinMaterial, in: Capsule())

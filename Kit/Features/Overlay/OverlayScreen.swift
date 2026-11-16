@@ -105,16 +105,19 @@ public struct OverlayScreen: View {
     // MARK: - Хром
 
     private var topBar: some View {
-        HStack(alignment: .top) {
+        // Подсказка — в своей колонке между кнопкой и симметричным отступом,
+        // поэтому никогда не перекрывает кнопку закрытия.
+        HStack(alignment: .center, spacing: 8) {
             CircleIconButton(systemImage: "xmark", action: onClose)
                 .accessibilityLabel("Закрыть")
-            Spacer()
-        }
-        .overlay(alignment: .top) {
-            if model.phase == .idle && model.selection == nil {
-                HintCapsule(text: "Обведите или коснитесь, чтобы найти")
-                    .transition(.move(edge: .top).combined(with: .opacity))
+            ZStack {
+                if model.phase == .idle && model.selection == nil {
+                    HintCapsule(text: "Обведите или коснитесь, чтобы найти")
+                        .transition(.move(edge: .top).combined(with: .opacity))
+                }
             }
+            .frame(maxWidth: .infinity)
+            Color.clear.frame(width: 44, height: 44)
         }
         .padding(.horizontal, 16)
         .padding(.top, 8)
