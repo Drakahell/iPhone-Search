@@ -86,6 +86,8 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.example.circlesearch.share
+        # Расширение лежит в CircleSearch.app/PlugIns/ — фреймворк ищем в Frameworks приложения.
+        LD_RUNPATH_SEARCH_PATHS: "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks"
 
   # ── Тесты ───────────────────────────────────────────────────────────────
   # (схема со сборкой и тестами описана в секции schemes ниже)
