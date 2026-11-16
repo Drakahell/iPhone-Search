@@ -3,6 +3,12 @@
 Аналог Circle to Search с Google Pixel для iPhone: обводите, закрашиваете или касаетесь объекта на экране —
 и получаете выдачу Google, распознанный текст, перевод и QR-ссылки.
 
+**Как раздать приложение другим людям** (установка по ссылке через TestFlight) —
+[docs/DISTRIBUTION.md](docs/DISTRIBUTION.md).
+
+**Как пользоваться:** сделать скриншот → открыть приложение — поиск начинается сам.
+Или: миниатюра скриншота → «Поделиться» → «Обвести и найти».
+
 ## Режимы работы и что происходит с текущим приложением
 
 iOS не позволяет сторонним приложениям рисовать поверх других приложений. Поэтому есть два режима:
@@ -58,9 +64,8 @@ xcodegen generate && open CircleSearch.xcodeproj
 
 Перед запуском на iPhone:
 1. Укажите `DEVELOPMENT_TEAM` в `project.yml`.
-2. Замените `com.example.circlesearch` и `group.com.example.circlesearch` на свои идентификаторы
-   (в `project.yml` и `Kit/Shared/AppGroup.swift`).
-3. Добавьте иконку 1024×1024 в `Resources/Assets.xcassets/AppIcon.appiconset`.
+2. Замените `BUNDLE_ID_PREFIX` в `project.yml` на свой идентификатор — остальные (расширение,
+   App Group) выводятся из него автоматически.
 
 Visual Intelligence работает на iPhone с Apple Intelligence (15 Pro и новее) на iOS 26+.
 Распознавание объектов по тапу работает только на реальном устройстве.

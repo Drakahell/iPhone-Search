@@ -14,8 +14,11 @@ settings:
     MARKETING_VERSION: "0.1.0"
     CURRENT_PROJECT_VERSION: "1"
     TARGETED_DEVICE_FAMILY: "1"
-    DEVELOPMENT_TEAM: ""          # <- укажите свой Team ID
-    APP_GROUP_ID: group.com.example.circlesearch
+    DEVELOPMENT_TEAM: ""          # <- Team ID (в CI передаётся из секретов)
+    # Единственное место, где задаётся идентификатор приложения.
+    # Для App Store он должен быть уникальным, например com.ваше-имя.circlesearch.
+    BUNDLE_ID_PREFIX: com.example.circlesearch
+    APP_GROUP_ID: group.$(BUNDLE_ID_PREFIX)
 
 targets:
   # ── Общая библиотека: вся логика, UI и анимации ──────────────────────────
@@ -25,7 +28,7 @@ targets:
     sources: [Kit]
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.example.circlesearch.kit
+        PRODUCT_BUNDLE_IDENTIFIER: $(BUNDLE_ID_PREFIX).kit
         GENERATE_INFOPLIST_FILE: YES
         APPLICATION_EXTENSION_API_ONLY: YES   # можно использовать и в расширениях
 
@@ -48,16 +51,18 @@ targets:
         UIViewControllerBasedStatusBarAppearance: true
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
         CFBundleURLTypes:
-          - CFBundleURLName: com.example.circlesearch
+          - CFBundleURLName: $(BUNDLE_ID_PREFIX)
             CFBundleURLSchemes: [circlesearch]
-        NSPhotoLibraryUsageDescription: Доступ нужен, чтобы открыть последний скриншот и начать поиск.
+        NSPhotoLibraryUsageDescription: Доступ нужен, чтобы сразу открывать только что сделанный скриншот.
+        AppGroupID: $(APP_GROUP_ID)
+        ITSAppUsesNonExemptEncryption: false
     entitlements:
       path: App/CircleSearch.entitlements
       properties:
-        com.apple.security.application-groups: [group.com.example.circlesearch]
+        com.apple.security.application-groups: [$(APP_GROUP_ID)]
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.example.circlesearch
+        PRODUCT_BUNDLE_IDENTIFIER: $(BUNDLE_ID_PREFIX)
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
 
@@ -73,6 +78,7 @@ targets:
       path: Extensions/ShareExtension/Info.plist
       properties:
         CFBundleDisplayName: Обвести и найти
+        AppGroupID: $(APP_GROUP_ID)
         NSExtension:
           NSExtensionPointIdentifier: com.apple.share-services
           NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).ShareViewController
@@ -82,10 +88,10 @@ targets:
     entitlements:
       path: Extensions/ShareExtension/CircleSearchShare.entitlements
       properties:
-        com.apple.security.application-groups: [group.com.example.circlesearch]
+        com.apple.security.application-groups: [$(APP_GROUP_ID)]
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.example.circlesearch.share
+        PRODUCT_BUNDLE_IDENTIFIER: $(BUNDLE_ID_PREFIX).share
         # Расширение лежит в CircleSearch.app/PlugIns/ — фреймворк ищем в Frameworks приложения.
         LD_RUNPATH_SEARCH_PATHS: "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks"
 
