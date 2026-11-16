@@ -318,7 +318,10 @@
       history.replaceState(null, "", location.pathname + location.search);
     };
     img.onerror = () => toast("Не удалось прочитать скриншот из команды.");
-    img.src = "data:image/jpeg;base64," + b64;
+    // Формат по первым байтам: PNG начинается с «iVBOR», JPEG — с «/9j/». Конвертация в команде не обязательна.
+    const mime = b64.startsWith("iVBOR") ? "image/png" : b64.startsWith("R0lG") ? "image/gif"
+      : b64.startsWith("UklG") ? "image/webp" : b64.startsWith("AAAA") ? "image/heic" : "image/jpeg";
+    img.src = "data:" + mime + ";base64," + b64;
     return true;
   }
 
